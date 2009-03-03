@@ -1173,6 +1173,9 @@ bool ChatHandler::HandleAddItemCommand(const char* args)
 
     uint32 countForStore = count;
 
+	// item used in local operations and in add item notifier
+	Item* item = NULL;
+
     // if possible create full stacks for better performance
     while(countForStore >= pProto->Stackable)
     {
@@ -1180,7 +1183,7 @@ bool ChatHandler::HandleAddItemCommand(const char* args)
         uint8 msg = plTarget->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, itemId, pProto->Stackable, false );
         if( msg == EQUIP_ERR_OK )
         {
-            Item* item = plTarget->StoreNewItem( dest, itemId, pProto->Stackable, true, Item::GenerateItemRandomPropertyId(itemId));
+            item = plTarget->StoreNewItem( dest, itemId, countForStore, true, Item::GenerateItemRandomPropertyId(itemId));
 
             countForStore-= pProto->Stackable;
 
@@ -1241,7 +1244,7 @@ bool ChatHandler::HandleAddItemCommand(const char* args)
                 uint8 msg = plTarget->CanStoreNewItem( itemStack->GetBagSlot(), itemStack->GetSlot(), dest, itemId, countForStack, false );
                 if( msg == EQUIP_ERR_OK )
                 {
-                    Item* item = plTarget->StoreNewItem( dest, itemId, countForStack, true, Item::GenerateItemRandomPropertyId(itemId));
+                    item = plTarget->StoreNewItem( dest, itemId, countForStack, true, Item::GenerateItemRandomPropertyId(itemId));
                     countForStore-= countForStack;
 
                     // remove binding (let GM give it to another player later)
@@ -1249,17 +1252,24 @@ bool ChatHandler::HandleAddItemCommand(const char* args)
                         item->SetBinding( false );
                 }
                 else
-                    break;                                  // not possable with correct work
+                   break;                                  // not possible with correct work
             }
             else
-                break;                                      // not possable with correct work
+                break;                                      // not possible with correct work
         }
         else
             break;
     }
 
-    if(count > countForStore)
-        PSendSysMessage(LANG_ITEM_CREATED, itemId, count - countForStore);
+	if(count > countForStore && item)
+	{
+		pl->SendNewItem(item,count - countForStore,false,true);
+			if(pl!=plTarget)
+			{
+				plTarget->SendNewItem(item,count - countForStore,true,false);
+			}
+	}
+
     if(countForStore > 0)
         PSendSysMessage(LANG_ITEM_CANNOT_CREATE, itemId, countForStore);
 
@@ -1307,17 +1317,14 @@ bool ChatHandler::HandleAddItemSetCommand(const char* args)
         uint8 msg = plTarget->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, itemId, 1, false );
         if( msg == EQUIP_ERR_OK )
         {
-            plTarget->StoreNewItem( dest, itemId, 1, true);
+            Item* item = plTarget->StoreNewItem( dest, itemId, 1, true);
 
             // remove binding (let GM give it to another player later)
             if(pl==plTarget)
-            {
-                Item* item = pl->GetItemByPos(dest);
-                if(item)
-                    item->SetBinding( false );
-            }
-
-            PSendSysMessage(LANG_ITEM_CREATED, itemId, 1);
+				item->SetBinding( false );
+				pl->SendNewItem(item,1,false,true);
+			if(pl!=plTarget)
+				plTarget->SendNewItem(item,1,true,false);
         }
         else
         {
