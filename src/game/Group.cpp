@@ -484,7 +484,7 @@ void Group::CountTheRoll(vector<Roll>::iterator roll, uint32 NumberOfPlayers)
             if (itr->second != NEED)
                 continue;
 
-            uint8 randomN = urand(0, 99);
+            uint8 randomN = urand(1, 99);
             SendLootRoll(0, itr->first, randomN, 1, *roll);
             if (maxresul < randomN)
             {
@@ -525,7 +525,7 @@ void Group::CountTheRoll(vector<Roll>::iterator roll, uint32 NumberOfPlayers)
             if (itr->second != GREED)
                 continue;
 
-            uint8 randomN = urand(0, 99);
+            uint8 randomN = urand(1, 99);
             SendLootRoll(0, itr->first, randomN, 2, *roll);
             if (maxresul < randomN)
             {
