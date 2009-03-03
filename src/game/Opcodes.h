@@ -828,6 +828,8 @@ enum OpCodes
     SMSG_COMPRESSED_MOVE                            = 0x2FB,// 763
     SMSG_OUTDOORPVP_NOTIFY                          = 0x33B,// 827
 };
+//if you add new opcode .. Do NOT forget to change the following define MAX_OPCODE_ID and also add new opcode to table in opcodes.cpp
+#define MAX_OPCODE_ID 827
 
 /// Results of friend related commands
 enum FriendsResult
