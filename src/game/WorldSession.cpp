@@ -481,69 +481,36 @@ bool WorldSession::Update(uint32 diff)
     {
         packet = _recvQueue.next();
 
-        //oldcode ... slow
-		/*for (i = 0; table[i].handler != NULL; i++)
-        {
-            if (table[i].opcode == packet->GetOpcode())
-            {
-                // more often case first
-                if (table[i].status == STATUS_LOGGEDIN && _player)
-                {
-                    (this->*table[i].handler)(*packet);
-                }
-                else
-                if (table[i].status == STATUS_AUTHED)
-                {
-                    m_playerRecentlyLogout = false;
-                    (this->*table[i].handler)(*packet);
-                }
-                else
-                    // skip STATUS_LOGGEDIN opcode unexpected errors if player logout sometime ago - this can be network lag delayed packets
-                if(!m_playerRecentlyLogout)
-                {
-                    sLog.outError( "SESSION: received unexpected opcode %s (0x%.4X)",
-                        LookupName(packet->GetOpcode(), g_worldOpcodeNames),
-                        packet->GetOpcode());
-                }
-
-                break;
-            }
-        }
-
-        if (table[i].handler == NULL)
-            sLog.outError( "SESSION: received unhandled opcode %s (0x%.4X)",
-                LookupName(packet->GetOpcode(), g_worldOpcodeNames),
-				packet->GetOpcode());*/
-
-		//new code FAST:
 		OpcodeTableMap::const_iterator iter = objmgr.opcodeTable.find( packet->GetOpcode() );
+		
 		if (iter == objmgr.opcodeTable.end())
 		{	
 			sLog.outError( "SESSION: received unhandled opcode %s (0x%.4X)",
 				LookupName(packet->GetOpcode(), g_worldOpcodeNames),
 				packet->GetOpcode());
-			continue;
-		}
-
-		if (iter->second.status == STATUS_LOGGEDIN && _player)
-		{
-			(this->*iter->second.handler)(*packet);
-		}
-		else if (iter->second.status == STATUS_AUTHED)
-		{
-			m_playerRecentlyLogout = false;
-			(this->*iter->second.handler)(*packet);
 		}
 		else
-			// skip STATUS_LOGGEDIN opcode unexpected errors if player logout sometime ago - this can be network lag delayed packets
-		if(!m_playerRecentlyLogout)
 		{
-			sLog.outError( "SESSION: received unexpected opcode %s (0x%.4X)",
-				LookupName(packet->GetOpcode(), g_worldOpcodeNames),
-				packet->GetOpcode());
+			if (iter->second.status == STATUS_LOGGEDIN && _player)
+			{
+			(this->*iter->second.handler)(*packet);
+			}
+			else if (iter->second.status == STATUS_AUTHED)
+			{
+				m_playerRecentlyLogout = false;
+				(this->*iter->second.handler)(*packet);
+			}
+			else
+				// skip STATUS_LOGGEDIN opcode unexpected errors if player logout sometime ago - this can be network lag delayed packets
+			if(!m_playerRecentlyLogout)
+			{
+				sLog.outError( "SESSION: received unexpected opcode %s (0x%.4X)",
+					LookupName(packet->GetOpcode(), g_worldOpcodeNames),
+					packet->GetOpcode());
+			}
 		}
 
-				delete packet;
+		delete packet;
     }
 
     ///- If necessary, log the player out
@@ -642,7 +609,8 @@ void WorldSession::LogoutPlayer(bool Save)
 
         ///- If the player is in a group (or invited), remove him. If the group if then only 1 person, disband the group.
         /// \todo Should'nt we also check if there is no other invitees before disbanding the group?
-        if(_player->groupInfo.invite)
+		/// answer : there is a way, but this is better, because it would use redundand RAM
+		if(_player->groupInfo.invite)
         {
             Group *group = _player->groupInfo.invite;
             if(group->RemoveInvite(_player) <= 1)
